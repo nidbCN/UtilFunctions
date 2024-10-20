@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using QRCoder;
@@ -12,16 +13,16 @@ namespace UtilFunctions;
 public class QrCode(ILogger<QrCode> logger)
 {
     [Function("QrCode")]
-    public HttpResponseMessage Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
+    public HttpResponseData Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req)
     {
         var content = req.Query["content"];
-        if (StringValues.IsNullOrEmpty(content))
-            return new(HttpStatusCode.NotFound);
+        if (string.IsNullOrEmpty(content))
+            return req.CreateResponse(HttpStatusCode.NotFound);
 
-        logger.LogInformation("Received generate qrcode with: {content}.", content!);
+        logger.LogInformation("Received generate qrcode with: {content}.", content);
 
         using var generator = new QRCodeGenerator();
-        using var data = generator.CreateQrCode(content!, QRCodeGenerator.ECCLevel.Q);
+        using var data = generator.CreateQrCode(content, QRCodeGenerator.ECCLevel.Q);
         using var svg = new SvgQRCode(data);
 
         var svgStr = svg.GetGraphic(24)
@@ -29,17 +30,10 @@ public class QrCode(ILogger<QrCode> logger)
 
         logger.LogInformation("Response generated: SVG {svg}.", svgStr);
 
-        var response = new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent($"<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>QrCode</title></head><body>{svgStr}</body></html>")
-            {
-                Headers =
-                {
-                    ContentType = new("text/html")
-                }
-            }
-        };
+        var resp = req.CreateResponse(HttpStatusCode.OK);
+        resp.Headers.Add("Content-Type", "image/svg+xml");
+        resp.WriteString(svgStr);
 
-        return response;
+        return resp;
     }
 }
