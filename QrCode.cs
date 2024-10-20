@@ -1,0 +1,41 @@
+using System.Net;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
+using QRCoder;
+
+namespace UtilFunctions;
+
+public class QrCode(ILogger<QrCode> logger)
+{
+    [Function("QrCode")]
+    public HttpResponseMessage Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
+    {
+        var content = req.Query["content"];
+        if (StringValues.IsNullOrEmpty(content))
+            return new(HttpStatusCode.NotFound);
+
+        logger.LogInformation("Received HTTP query: {content}", content!);
+
+        using var generator = new QRCodeGenerator();
+        using var data = generator.CreateQrCode(content!, QRCodeGenerator.ECCLevel.Q);
+        using var svg = new SvgQRCode(data);
+
+        var svgStr = svg.GetGraphic(24)
+            .Replace("\n", string.Empty);
+
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(svgStr)
+            {
+                Headers =
+                {
+                    ContentType = new("image/svg+xml")
+                }
+            }
+        };
+
+        return response;
+    }
+}
