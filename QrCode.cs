@@ -13,7 +13,7 @@ namespace UtilFunctions;
 public class QrCode(ILogger<QrCode> logger)
 {
     [Function("QrCode")]
-    public HttpResponseData Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req)
+    public HttpResponseData Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req, FunctionContext executionContext)
     {
         var content = req.Query["content"];
         if (string.IsNullOrEmpty(content))
@@ -35,5 +35,19 @@ public class QrCode(ILogger<QrCode> logger)
         resp.WriteString(svgStr);
 
         return resp;
+    }
+
+    [Function("Test")]
+    public static HttpResponseData RunTest([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequestData req,
+        FunctionContext executionContext)
+    {
+        var logger = executionContext.GetLogger("Test");
+        logger.LogInformation("message logged");
+
+        var response = req.CreateResponse(HttpStatusCode.OK);
+        response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+        response.WriteString("Welcome to .NET isolated worker !!");
+
+        return response;
     }
 }
