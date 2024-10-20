@@ -26,7 +26,7 @@ public class QrCode(ILogger<QrCode> logger)
         using var data = generator.CreateQrCode(content!, QRCodeGenerator.ECCLevel.Q);
         using var svg = new SvgQRCode(data);
 
-        var svgStr = svg.GetGraphic(24)
+        var svgStr = svg.GetGraphic(12)
             .Replace("\n", string.Empty);
 
         logger.LogInformation("Response generated: SVG length {len}.", svgStr.Length);
