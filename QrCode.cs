@@ -16,7 +16,7 @@ public class QrCode(ILogger<QrCode> logger)
         if (StringValues.IsNullOrEmpty(content))
             return new(HttpStatusCode.NotFound);
 
-        logger.LogInformation("Received HTTP query: {content}", content!);
+        logger.LogInformation("Received generate qrcode with: {content}.", content!);
 
         using var generator = new QRCodeGenerator();
         using var data = generator.CreateQrCode(content!, QRCodeGenerator.ECCLevel.Q);
@@ -24,6 +24,8 @@ public class QrCode(ILogger<QrCode> logger)
 
         var svgStr = svg.GetGraphic(24)
             .Replace("\n", string.Empty);
+        
+        logger.LogInformation("Response generated: SVG {svg}.", svgStr);
 
         var response = new HttpResponseMessage(HttpStatusCode.OK)
         {
